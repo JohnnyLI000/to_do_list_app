@@ -20,7 +20,7 @@ class _HomePage2State extends State<HomePage2> {
   List<NotesModel> noteModelList = [];
   NotesModel currentNote;
   bool isNewNote = false;
-
+  int countShit = 0;
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -54,7 +54,7 @@ class _HomePage2State extends State<HomePage2> {
                       ],
                     ),
                   ),
-                 toolBar(),
+                  toolBar(),
                   Expanded(child: _buildBody(context))
                 ],
               ),
@@ -65,77 +65,97 @@ class _HomePage2State extends State<HomePage2> {
     ));
   }
 
-  Widget toolBar() =>Row(
-    children: <Widget>[
-      Expanded(flex: 4,child: Container(),),
-      Expanded(flex: 3,
-        child: isNewNote
-            ? InkWell(
-          child: Row(
-            children: <Widget>[
-              Container(
-                child: Icon(Icons.check),
-              ),
-              Text(
-                "Save",
-                style: TextStyle(
-                    fontFamily: 'Helvetica Regular',
-                    fontSize: 13,
-                    color: Colors.black,
-                    fontWeight: FontWeight.w400),
-              ),
-            ],
+  Widget toolBar() => Row(
+        children: <Widget>[
+          Expanded(
+            flex: 4,
+            child: Container(),
           ),
-          onTap: (){
-            setState(() {
-              isNewNote =! isNewNote;
-            });
-          },
-        )
-            : InkWell(
-          child: Row(
-            children: <Widget>[
-              Container(
-                child: Icon(Icons.add),
-              ),
-              Text(
-                "Add",
-                style: TextStyle(
-                    fontFamily: 'Helvetica Regular',
-                    fontSize: 13,
-                    color: Colors.black,
-                    fontWeight: FontWeight.w400),
-              ),
-            ],
+          Expanded(
+            flex: 3,
+            child: isNewNote
+                ? InkWell(
+                    child: Row(
+                      children: <Widget>[
+                        Container(
+                          child: Icon(Icons.check),
+                        ),
+                        Text(
+                          "Save",
+                          style: TextStyle(
+                              fontFamily: 'Helvetica Regular',
+                              fontSize: 13,
+                              color: Colors.black,
+                              fontWeight: FontWeight.w400),
+                        ),
+                      ],
+                    ),
+                    onTap: () {
+                      setState(() {
+                        isNewNote = !isNewNote;
+                      });
+                    },
+                  )
+                : InkWell(
+                    child: Row(
+                      children: <Widget>[
+                        Container(
+                          child: Icon(Icons.add),
+                        ),
+                        Text(
+                          "Add",
+                          style: TextStyle(
+                              fontFamily: 'Helvetica Regular',
+                              fontSize: 13,
+                              color: Colors.black,
+                              fontWeight: FontWeight.w400),
+                        ),
+                      ],
+                    ),
+                    onTap: () {
+                      setState(() {
+                        isNewNote = !isNewNote;
+                        newNote();
+                      });
+                    },
+                  ),
           ),
-          onTap: (){
-            setState(() {
-              isNewNote =! isNewNote;
-              newNote();
-            });
-          },
-        ),),
-      Expanded(flex: 3,child: Container()),
-    ],
-  );
+          Expanded(flex: 3, child: Container()),
+        ],
+      );
 
- void newNote(){
-    NotesModel newNote = new NotesModel(note:"SS",isContinued: false,isCompleted:false );
-    repository.addNote(newNote);
- }
- void deleteNote(NotesModel note)
- {
-   repository.deleteNote(note);
- }
-  void getNoteFromSnapshot(DocumentSnapshot snapshot) // pass the snapshot into the model
+  void newNote() {
+    NotesModel newNote =
+        new NotesModel(note: "", isContinued: false, isCompleted: false);
+    //noteModelList.add(newNote);
+//    for(int i =0 ;i <noteModelList.length-1;i++)
+//      {
+//        print(i);
+//        print(noteModelList[i].note);
+//      }
+  }
+
+  void deleteNote(NotesModel note) {
+    repository.deleteNote(note);
+  }
+
+  void getNoteFromSnapshot(List<DocumentSnapshot> noteList) // pass the snapshot into the model
   {
-    currentNote = NotesModel.fromSnapshot(snapshot) ?? Container();
-    if(currentNote.note!="") {
-      noteModelList.add(currentNote);
-    }
-    else{
-      print("empty note");
-      deleteNote(currentNote);
+    print(noteModelList.length);
+    for (int i = 0; i < noteList.length; i++) {
+      currentNote = NotesModel.fromSnapshot(noteList[i]) ?? null;
+      if(noteModelList.length>=noteList.length) // fix the repitive go through this function problem , without this , it will adds motiple time of current note into notemodellsit  
+      {
+        for (int counter = 0; counter < noteModelList.length; counter++) {
+          if (currentNote.note!= noteModelList[counter].note&&currentNote.isContinued != noteModelList[counter].isContinued) {
+            noteModelList.add(currentNote);
+          }
+        }
+      }
+      else
+        {
+        noteModelList.add(currentNote);
+        }
     }
   }
 
@@ -146,6 +166,7 @@ class _HomePage2State extends State<HomePage2> {
         if (!snapshot.hasData)
           return LinearProgressIndicator();
         else {
+          getNoteFromSnapshot(snapshot.data.documents);
           return _buildList(context, snapshot.data.documents);
         }
       },
@@ -163,7 +184,7 @@ class _HomePage2State extends State<HomePage2> {
         itemCount: noteList.length,
         scrollDirection: Axis.vertical,
         itemBuilder: (context, index) {
-          getNoteFromSnapshot(noteList[index]);
+          print("index: " + index.toString());
           return Row(
             children: <Widget>[
               Expanded(
@@ -196,7 +217,7 @@ class _HomePage2State extends State<HomePage2> {
                           fontWeight: FontWeight.w500),
                       border: InputBorder.none,
                     ),
-                    onChanged: (text){
+                    onChanged: (text) {
                       noteModelList[index].note = text;
                       repository.updateNote(noteModelList[index]);
                     },
@@ -210,7 +231,7 @@ class _HomePage2State extends State<HomePage2> {
                       onPressed: () {
                         setState(() {
                           noteModelList[index].isContinued =
-                          !noteModelList[index].isContinued;
+                              !noteModelList[index].isContinued;
                           repository.updateNote(noteModelList[index]);
                         });
                       })),
