@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:to_do_list_app/page/home_page2.dart';
+import 'package:to_do_list_app/page/home_page.dart';
 
-import 'page/home_page.dart';
 
 void main() => runApp(MyApp());
 
@@ -23,7 +22,7 @@ class MyApp extends StatelessWidget {
         // is not restarted.
         primarySwatch: Colors.blue,
       ),
-      home: HomePage2(),
+      home: HomePage(),
     );
   }
 }

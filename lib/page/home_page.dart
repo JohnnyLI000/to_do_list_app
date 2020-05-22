@@ -1,7 +1,12 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
-
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter_hooks/flutter_hooks.dart';
+import 'package:to_do_list_app/Model/Model.dart';
+import 'package:to_do_list_app/page/new_note_page.dart';
+import 'package:to_do_list_app/services/Data_Repository.dart';
 import '../Color_From_Hex.dart';
+import '../services/Data_Repository.dart';
 
 class HomePage extends StatefulWidget {
   @override
@@ -11,149 +16,193 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   Color deviderColor = colorFromHex('#CAC1C1');
   Color textColor = colorFromHex('#707070');
-  TextEditingController contentController = TextEditingController();
-  List<Widget> _noteList = [];
-  FocusNode noteFocusNode;
-  int counter = 0;
-  bool addSelected = false;
-  bool onSave = false ;
+  static DataRepository repository = new DataRepository();
+  List<NotesModel> noteModelList = [];
+  NotesModel currentNote;
+  TextEditingController textController;
+
   @override
   void initState() {
-    super.initState();
-
-    noteFocusNode = FocusNode();
+    textController = TextEditingController();
   }
 
-  @override
-  void dispose() {
-    // Clean up the focus node when the Form is disposed.
-    noteFocusNode.dispose();
 
-    super.dispose();
-  }
-  @override
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body:_buildBody(context),
-    );
+        body: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(10, 8, 13, 0),
+            child: Column(
+              children: <Widget>[
+                Expanded(
+                    child: Container(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisAlignment: MainAxisAlignment.start,
+                        children: <Widget>[
+                          Padding(
+                            padding: const EdgeInsets.only(left: 4),
+                            child: Row(
+                              children: <Widget>[
+                                Image.asset('images/light-up.png'),
+                                Padding(
+                                  padding: const EdgeInsets.only(left: 7),
+                                  child: Text(
+                                    "My list ",
+                                    style: TextStyle(
+                                        fontFamily: 'Helvetica Regular',
+                                        fontSize: 20,
+                                        color: Colors.black,
+                                        fontWeight: FontWeight.w600),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          toolBar(),
+                          Expanded(child: _buildBody(context))
+                        ],
+                      ),
+                    )),
+              ],
+            ),
+          ),
+        ));
   }
 
-//  void _addNewNote() {
-//    print(_noteList.length);
-//    _noteList = List.from(_noteList)
-//      ..insert(0,
-//        _noteItem(),
-//      );
-//    setState(() {
-//      counter++;
-//      onSave = false;
-//      addSelected = !addSelected;
-//    });
-//  }
-
-
-  Widget _noteItemList(BuildContext context ,List<DocumentSnapshot> noteList) => ListView.builder(
-    shrinkWrap: true,
-    itemBuilder: (context,index){
-      return Row(
-        children: <Widget>[
-          Expanded(
-              flex: 1,
-              child: IconButton(
-                  icon: Icon(Icons.radio_button_unchecked),
-                  onPressed:null)),
-          Expanded(
-              flex: 8,
-              child: TextFormField(
-                keyboardType: TextInputType.multiline,
-                maxLines: null,
-                autofocus: true,
-
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500),
-                decoration: InputDecoration(
-                  hintText: noteList[0].data['note'],
-                  focusedBorder: UnderlineInputBorder(
-                    borderSide: BorderSide(color: Colors.black),
-                  ),
-                  hintStyle: TextStyle(
-                      color: Colors.grey.shade400,
-                      fontSize: 18,
-                      fontWeight: FontWeight.w500),
-                  border: InputBorder.none,
-                ),
-              )),
-          Expanded(
-              flex: 1,
-              child: IconButton(
-                  icon: Icon(Icons.star_border), onPressed: null)),
-        ],
-      );
-    }
-
+  Widget toolBar() =>Row(
+    children: <Widget>[
+      Expanded(flex: 4,child: Container(),),
+      Expanded(flex: 3,
+        child:InkWell(
+          child: Row(
+            children: <Widget>[
+              Container(
+                child: Icon(Icons.add),
+              ),
+              Text(
+                "Add",
+                style: TextStyle(
+                    fontFamily: 'Helvetica Regular',
+                    fontSize: 13,
+                    color: Colors.black,
+                    fontWeight: FontWeight.w400),
+              ),
+            ],
+          ),
+          onTap: () async{
+            NotesModel addNewNoteResult = await
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => NewNotePage()),
+              );
+              if(addNewNoteResult.note!=""){
+                setState(() {
+                  repository.addNote(addNewNoteResult);
+                });
+              }
+          },
+        ),),
+      Expanded(flex: 3,child: Container()),
+    ],
   );
 
-  Widget _noteListWidget() => Expanded(
-        child: Padding(
-          padding: const EdgeInsets.only(bottom: 4),
-          child: Container(
-              child: ListView(
-            shrinkWrap: true,
-            scrollDirection: Axis.vertical,
-            children: _noteList,
-          )),
-        ),
-      );
 
+  void getNoteFromDocuments( List<DocumentSnapshot> noteList)
+  {
+    noteModelList.clear();
+    for(int i = 0;i<noteList.length;i++)
+      {
+        currentNote = NotesModel.fromSnapshot(noteList[i]) ?? Container();
+        if(currentNote.note!="") {
+          noteModelList.add(currentNote);
+        }
+        else{
+          print("empty note");
+          repository.deleteNote(currentNote);
+        }
+      }
+    print("length :" + noteModelList.length.toString());
+  }
   Widget _buildBody(BuildContext context) {
     return StreamBuilder<QuerySnapshot>(
-      stream: Firestore.instance.collection('to_do_list').snapshots(),
-      builder: (context, snapshot) {
-        if (!snapshot.hasData) return LinearProgressIndicator();
-
-        return _buildList(context, snapshot.data.documents);
+      stream: repository.getStream(),
+      builder: (context, AsyncSnapshot<QuerySnapshot> snapshot) {
+        if (!snapshot.hasData)
+          return LinearProgressIndicator();
+        else {
+            getNoteFromDocuments(snapshot.data.documents);
+          return _buildList(context, snapshot.data.documents);
+        }
       },
     );
   }
-  Widget _buildList(BuildContext context, List<DocumentSnapshot> noteList) {
-    return SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(10, 8, 13, 0),
-        child: Column(
-          children: <Widget>[
-            Expanded(
-                child: Container(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.start,
-                    children: <Widget>[
-                      Padding(
-                        padding: const EdgeInsets.only(left: 4),
-                        child: Row(
-                          children: <Widget>[
-                            Image.asset('images/light-up.png'),
-                            Padding(
-                              padding: const EdgeInsets.only(left: 7),
-                              child: Text(
-                                "My list ",
-                                style: TextStyle(
-                                    fontFamily: 'Helvetica Regular',
-                                    fontSize: 20,
-                                    color: textColor,
-                                    fontWeight: FontWeight.w600),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      _noteItemList(context, noteList)
-                    ],
-                  ),
-                )),
-          ],
-        ),
-      ),
-    );
-  }
 
+
+
+
+  Widget _buildList(BuildContext context, List<DocumentSnapshot> noteList) {
+    return ListView.builder(
+        shrinkWrap: true,
+        itemCount: noteModelList.length,
+        scrollDirection: Axis.vertical,
+        itemBuilder: (context, index) {
+          textController.text  = noteModelList[index].note;
+          return Row(
+            children: <Widget>[
+              Expanded(
+                  flex: 1,
+                  child: IconButton(
+                      icon: noteModelList[index].isCompleted
+                          ? Icon(Icons.radio_button_checked)
+                          : Icon(Icons.radio_button_unchecked),
+                      onPressed: (){
+                        setState(() {
+                          noteModelList[index].isCompleted =
+                          !noteModelList[index].isCompleted;
+                          repository.updateNote(noteModelList[index]);
+                        });
+                      }
+                      )),
+              Expanded(
+                  flex: 8,
+                  child: TextFormField(
+                    keyboardType: TextInputType.multiline,
+                    maxLines: null,
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500),
+                   // initialValue: noteList[index].documentID.toString(), //here is mistake , not initial value mistake , for some reason it just replace the old one
+                    initialValue: noteModelList[index].note,
+                    decoration: InputDecoration(
+                      focusedBorder: UnderlineInputBorder(
+                        borderSide: BorderSide(color: Colors.black),
+                      ),
+                      hintStyle: TextStyle(
+                          color: Colors.grey.shade400,
+                          fontSize: 18,
+                          fontWeight: FontWeight.w500),
+                      border: InputBorder.none,
+                    ),
+                    onChanged: (text){
+                      noteModelList[index].note = text;
+                      repository.updateNote(noteModelList[index]);
+                    },
+                  )),
+              Expanded(
+                  flex: 1,
+                  child: IconButton(
+                      icon: noteModelList[index].isContinued
+                          ? Icon(Icons.star)
+                          : Icon(Icons.star_border),
+                      onPressed: () {
+                        setState(() {
+                          noteModelList[index].isContinued =
+                          !noteModelList[index].isContinued;
+                          repository.updateNote(noteModelList[index]);
+                        });
+                      })),
+            ],
+          );
+        });
+  }
 }

@@ -6,7 +6,8 @@ class NotesModel {
   String note;
   bool isContinued;
   bool isCompleted;
-  NotesModel({this.note, this.isContinued,this.isCompleted});
+  Timestamp time;
+  NotesModel({this.note, this.isContinued,this.isCompleted,this.time});
 
   DocumentReference reference;
 
@@ -14,6 +15,7 @@ class NotesModel {
     NotesModel newNotes = NotesModel.fromJson(snapshot.data);
     newNotes.reference = snapshot.reference;
     return newNotes;
+
   }
   factory NotesModel.fromJson(Map<String, dynamic> json) => _notesFromJson(json); //this one is problem in the sample code
   //factory NotesModel.fromJson(Map<String, dynamic> json) => _notesFromJson(json);
@@ -25,7 +27,7 @@ class NotesModel {
       'note': this.note,
       'isContinued': this.isContinued == true ? 1 : 0,
       'isCompleted': this.isCompleted== true ? 1 : 0,
-
+      'time': this.time
     };
   }
 
@@ -33,12 +35,13 @@ class NotesModel {
         note: json['note'] as String,
         isContinued: json['isContinued'] as bool,
        isCompleted: json['isCompleted'] as bool,
-
+      time: json['time'] as Timestamp
   );
 
   Map<String, dynamic> _notesToJson(NotesModel note) => <String, dynamic> {
     'note': note.note,
     'isCompleted': note.isCompleted,
     'isContinued': note.isContinued,
+    'time':note.time,
   };
 }
