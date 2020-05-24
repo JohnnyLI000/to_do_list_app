@@ -16,16 +16,25 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   Color deviderColor = colorFromHex('#CAC1C1');
   Color textColor = colorFromHex('#707070');
+  Color mainOrange = colorFromHex("#EF8863");
   static DataRepository repository = new DataRepository();
   List<NotesModel> noteModelList = [];
   NotesModel currentNote;
   TextEditingController textController;
 
+  int completed = 0;
   @override
   void initState() {
     textController = TextEditingController();
   }
 
+  @override
+  void dispose() {
+    // Clean up the controller when the widget is removed from the
+    // widget tree.
+    textController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -45,18 +54,39 @@ class _HomePageState extends State<HomePage> {
                             padding: const EdgeInsets.only(left: 4),
                             child: Row(
                               children: <Widget>[
-                                Image.asset('images/light-up.png'),
-                                Padding(
-                                  padding: const EdgeInsets.only(left: 7),
-                                  child: Text(
-                                    "My list ",
-                                    style: TextStyle(
-                                        fontFamily: 'Helvetica Regular',
-                                        fontSize: 20,
-                                        color: Colors.black,
-                                        fontWeight: FontWeight.w600),
+                                Container(
+                                  child:Row(
+                                    children: <Widget>[
+                                      Image.asset('images/light-up.png'),
+                                      Padding(
+                                        padding: const EdgeInsets.only(left: 7),
+                                        child: Text(
+                                          "My list ",
+                                          style: TextStyle(
+                                              fontFamily: 'Helvetica Regular',
+                                              fontSize: 20,
+                                              color: Colors.black,
+                                              fontWeight: FontWeight.w600),
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ),
+                                Padding(
+                                  padding: EdgeInsets.only(left: MediaQuery.of(context).size.width/1.78),
+                                  child: Container(
+                                    child: RichText(
+                                        text: TextSpan(text: completed.toString(),
+                                              style: TextStyle(
+                                              color: mainOrange, fontSize: 18),
+                                          children: <TextSpan>[
+                                          TextSpan(text: '/'+noteModelList.length.toString(),style: TextStyle(
+                                              color: Colors.black, fontSize: 22
+                                          ))]
+                                     ),),
+                                  ),
+                                )
+  
                               ],
                             ),
                           ),
@@ -92,18 +122,18 @@ class _HomePageState extends State<HomePage> {
             ],
           ),
           onTap: () async{
+            NotesModel newNote = new NotesModel(note: "",isContinued: false,isCompleted: false);
             NotesModel addNewNoteResult = await
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => NewNotePage()),
-              );
+                MaterialPageRoute(builder: (context) => NewNotePage(passNote: newNote,)));
               if(addNewNoteResult.note!=""){
                 setState(() {
                   repository.addNote(addNewNoteResult);
                 });
               }
           },
-        ),),
+        )),
       Expanded(flex: 3,child: Container()),
     ],
   );
@@ -112,11 +142,17 @@ class _HomePageState extends State<HomePage> {
   void getNoteFromDocuments( List<DocumentSnapshot> noteList)
   {
     noteModelList.clear();
+    completed=0;
     for(int i = 0;i<noteList.length;i++)
       {
         currentNote = NotesModel.fromSnapshot(noteList[i]) ?? Container();
         if(currentNote.note!="") {
           noteModelList.add(currentNote);
+          if(currentNote.isCompleted)
+            {
+              print(completed.toString());
+              completed+=1;
+            }
         }
         else{
           print("empty note");
@@ -139,8 +175,7 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-
-
+  
 
   Widget _buildList(BuildContext context, List<DocumentSnapshot> noteList) {
     return ListView.builder(
@@ -148,7 +183,6 @@ class _HomePageState extends State<HomePage> {
         itemCount: noteModelList.length,
         scrollDirection: Axis.vertical,
         itemBuilder: (context, index) {
-          textController.text  = noteModelList[index].note;
           return Row(
             children: <Widget>[
               Expanded(
@@ -162,32 +196,37 @@ class _HomePageState extends State<HomePage> {
                           noteModelList[index].isCompleted =
                           !noteModelList[index].isCompleted;
                           repository.updateNote(noteModelList[index]);
+
+                          if(noteModelList[index].isCompleted){
+                            completed++;
+                          }
+                          else
+                            {
+                              completed--;
+                            }
                         });
                       }
                       )),
               Expanded(
-                  flex: 8,
-                  child: TextFormField(
-                    keyboardType: TextInputType.multiline,
-                    maxLines: null,
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500),
-                   // initialValue: noteList[index].documentID.toString(), //here is mistake , not initial value mistake , for some reason it just replace the old one
-                    initialValue: noteModelList[index].note,
-                    decoration: InputDecoration(
-                      focusedBorder: UnderlineInputBorder(
-                        borderSide: BorderSide(color: Colors.black),
-                      ),
-                      hintStyle: TextStyle(
-                          color: Colors.grey.shade400,
-                          fontSize: 18,
-                          fontWeight: FontWeight.w500),
-                      border: InputBorder.none,
-                    ),
-                    onChanged: (text){
-                      noteModelList[index].note = text;
-                      repository.updateNote(noteModelList[index]);
-                    },
-                  )),
+                flex: 8,
+                child: InkWell(
+                  onTap: ()async{
+                    NotesModel editNoteResult = await
+                    Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => NewNotePage(passNote: noteModelList[index],)));
+                    if(editNoteResult.note!=""){
+                      setState(() {
+                        repository.updateNote(editNoteResult);
+                      });
+                    }
+                  },
+                  child: Container(
+                    child: Text(noteModelList[index].note,
+                      style:TextStyle(fontSize: 18, fontWeight: FontWeight.w500,decoration: noteModelList[index].isCompleted?TextDecoration.lineThrough:null) ,),
+                  ),
+                ),
+              ),
               Expanded(
                   flex: 1,
                   child: IconButton(

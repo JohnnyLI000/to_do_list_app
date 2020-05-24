@@ -4,23 +4,24 @@ import 'package:to_do_list_app/Model/Model.dart';
 import 'home_page.dart';
 
 class NewNotePage extends StatefulWidget {
+  NotesModel passNote;
+
+  NewNotePage({Key key,this.passNote});
   @override
   _NewNotePageState createState() => _NewNotePageState();
 }
 
 class _NewNotePageState extends State<NewNotePage> {
-  NotesModel newNote;
   DateTime currentTime ;
   Timestamp currentTimeStamp ;
-
+  NotesModel note;
   @override
   void initState() {
-    newNote = new NotesModel(note: "",isContinued: false,isCompleted: false);
+    note = widget.passNote;
   }
 
   @override
   Widget build(BuildContext context) {
-
     return WillPopScope(
       onWillPop: () => Future.value(true),
       child: Scaffold(
@@ -29,12 +30,12 @@ class _NewNotePageState extends State<NewNotePage> {
               padding: const EdgeInsets.all(12.0),
               child: Column(children: <Widget>[
                 Container(
-                child: newNote.note.isEmpty?
+                child: note.note.isEmpty?
                 IconButton(
                   icon: Icon(Icons.clear),
                   onPressed: () {
                     setState(() {
-                      Navigator.pop(context, newNote);
+                      Navigator.pop(context, note);
                     });
                   },
                   ):
@@ -44,8 +45,8 @@ class _NewNotePageState extends State<NewNotePage> {
                     setState(() {
                       currentTime = DateTime.now();
                       currentTimeStamp = Timestamp.fromDate(currentTime);
-                      newNote.time = currentTimeStamp;
-                      Navigator.pop(context, newNote);
+                      note.time = currentTimeStamp;
+                      Navigator.pop(context, note);
                   });
                   },
                 ),
@@ -56,6 +57,7 @@ class _NewNotePageState extends State<NewNotePage> {
                     keyboardType: TextInputType.multiline,
                     maxLines: null,
                     style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500),
+                    initialValue: note.note,
                     decoration: InputDecoration(
                       hintText: "I want to ",
                       focusedBorder: UnderlineInputBorder(
@@ -69,7 +71,7 @@ class _NewNotePageState extends State<NewNotePage> {
                     ),
                     onChanged: (text){
                       setState(() {
-                          newNote.note = text;
+                          note.note = text;
                       });
                     },
                   ),
@@ -79,13 +81,13 @@ class _NewNotePageState extends State<NewNotePage> {
                   child: InkWell(
                     child: Row(
                       children: <Widget>[
-                        newNote.isContinued?Icon(Icons.radio_button_checked):Icon(Icons.radio_button_unchecked),
+                        note.isContinued?Icon(Icons.star):Icon(Icons.star_border),
                         Text("Do it everyday")
                       ],
                     ),
                     onTap: (){
                       setState(() {
-                        newNote.isContinued =!newNote.isContinued;
+                        note.isContinued =!note.isContinued;
                       });
                     },
                   ),
