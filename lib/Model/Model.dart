@@ -4,10 +4,10 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 class NotesModel {
   String note;
-  bool isContinued;
+  bool isImportant;
   bool isCompleted;
   Timestamp time;
-  NotesModel({this.note, this.isContinued,this.isCompleted,this.time});
+  NotesModel({this.note, this.isImportant,this.isCompleted,this.time});
 
   DocumentReference reference;
 
@@ -25,7 +25,7 @@ class NotesModel {
   Map<String, dynamic> toMap() {
     return <String, dynamic>{
       'note': this.note,
-      'isContinued': this.isContinued == true ? 1 : 0,
+      'isImportant': this.isImportant == true ? 1 : 0,
       'isCompleted': this.isCompleted== true ? 1 : 0,
       'time': this.time
     };
@@ -33,7 +33,7 @@ class NotesModel {
 
   static NotesModel _notesFromJson (Map<String, dynamic> json) => NotesModel(
         note: json['note'] as String,
-        isContinued: json['isContinued'] as bool,
+        isImportant: json['isImportant'] as bool,
        isCompleted: json['isCompleted'] as bool,
       time: json['time'] as Timestamp
   );
@@ -41,7 +41,7 @@ class NotesModel {
   Map<String, dynamic> _notesToJson(NotesModel note) => <String, dynamic> {
     'note': note.note,
     'isCompleted': note.isCompleted,
-    'isContinued': note.isContinued,
+    'isImportant': note.isImportant,
     'time':note.time,
   };
 }

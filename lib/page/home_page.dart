@@ -122,7 +122,7 @@ class _HomePageState extends State<HomePage> {
             ],
           ),
           onTap: () async{
-            NotesModel newNote = new NotesModel(note: "",isContinued: false,isCompleted: false);
+            NotesModel newNote = new NotesModel(note: "",isImportant: false,isCompleted: false);
             NotesModel addNewNoteResult = await
               Navigator.push(
                 context,
@@ -183,65 +183,163 @@ class _HomePageState extends State<HomePage> {
         itemCount: noteModelList.length,
         scrollDirection: Axis.vertical,
         itemBuilder: (context, index) {
-          return Row(
-            children: <Widget>[
-              Expanded(
-                  flex: 1,
-                  child: IconButton(
-                      icon: noteModelList[index].isCompleted
-                          ? Icon(Icons.radio_button_checked)
-                          : Icon(Icons.radio_button_unchecked),
-                      onPressed: (){
-                        setState(() {
-                          noteModelList[index].isCompleted =
-                          !noteModelList[index].isCompleted;
-                          repository.updateNote(noteModelList[index]);
+          return Dismissible(
+            key: Key(noteModelList[index].toString()),
+            background: slideRightBackground(),
+            secondaryBackground: slideLeftBackground(),
+            // ignore: missing_return
+            confirmDismiss: (direction) async {
+              if (direction == DismissDirection.endToStart) {
+                final bool res = await showDialog(
+                    context: context,
+                    builder: (BuildContext context) {
+                      return AlertDialog(
+                        content: Text(
+                            "Are you sure you want to delete ${noteModelList[index].note}?"),
+                        actions: <Widget>[
+                          FlatButton(
+                            child: Text(
+                              "Cancel",
+                              style: TextStyle(color: Colors.black),
+                            ),
+                            onPressed: () {
+                              Navigator.of(context).pop();
+                            },
+                          ),
+                          FlatButton(
+                            child: Text(
+                              "Delete",
+                              style: TextStyle(color: Colors.red),
+                            ),
+                            onPressed: () {
+                              setState(() {
+                                repository.deleteNote(noteModelList[index]);
+                              });
+                              Navigator.of(context).pop();
+                            },
+                          ),
+                        ],
+                      );
+                    });
+                return res;
+              }
+              else{
+                NotesModel editNoteResult = await Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => NewNotePage(passNote: noteModelList[index],)));
+                if(editNoteResult.note!=""){
+                  setState(() {
+                    repository.updateNote(editNoteResult);
+                  });
+                }
+              }
+            },
+            child: InkWell(
+              onTap: (){print(noteModelList[index]);},
+              child: Row(
+                children: <Widget>[
+                  Expanded(
+                      flex: 1,
+                      child: IconButton(
+                          icon: noteModelList[index].isCompleted
+                              ? Icon(Icons.radio_button_checked)
+                              : Icon(Icons.radio_button_unchecked),
+                          onPressed: (){
+                            setState(() {
+                              noteModelList[index].isCompleted =
+                              !noteModelList[index].isCompleted;
+                              repository.updateNote(noteModelList[index]);
 
-                          if(noteModelList[index].isCompleted){
-                            completed++;
+                              if(noteModelList[index].isCompleted){
+                                completed++;
+                              }
+                              else
+                                {
+                                  completed--;
+                                }
+                            });
                           }
-                          else
-                            {
-                              completed--;
-                            }
-                        });
-                      }
-                      )),
-              Expanded(
-                flex: 8,
-                child: InkWell(
-                  onTap: ()async{
-                    NotesModel editNoteResult = await
-                    Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (context) => NewNotePage(passNote: noteModelList[index],)));
-                    if(editNoteResult.note!=""){
-                      setState(() {
-                        repository.updateNote(editNoteResult);
-                      });
-                    }
-                  },
-                  child: Container(
-                    child: Text(noteModelList[index].note,
-                      style:TextStyle(fontSize: 18, fontWeight: FontWeight.w500,decoration: noteModelList[index].isCompleted?TextDecoration.lineThrough:null) ,),
+                          )),
+                  Expanded(
+                    flex: 8,
+                    child: Container(
+                      child: Text(noteModelList[index].note,
+                        style:TextStyle(fontSize: 18, fontWeight: FontWeight.w500,decoration: noteModelList[index].isCompleted?TextDecoration.lineThrough:null) ,),
+                    ),
                   ),
-                ),
+                  Expanded(
+                      flex: 1,
+                      child: IconButton(
+                          icon: noteModelList[index].isImportant
+                              ? Icon(Icons.star)
+                              : Icon(Icons.star_border),
+                          onPressed: () {
+                            setState(() {
+                              noteModelList[index].isImportant =
+                              !noteModelList[index].isImportant;
+                              repository.updateNote(noteModelList[index]);
+                            });
+                          })),
+                ],
               ),
-              Expanded(
-                  flex: 1,
-                  child: IconButton(
-                      icon: noteModelList[index].isContinued
-                          ? Icon(Icons.star)
-                          : Icon(Icons.star_border),
-                      onPressed: () {
-                        setState(() {
-                          noteModelList[index].isContinued =
-                          !noteModelList[index].isContinued;
-                          repository.updateNote(noteModelList[index]);
-                        });
-                      })),
-            ],
+            ),
           );
         });
   }
+
+  Widget slideRightBackground() {
+    return Container(
+      child: Align(
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.start,
+          children: <Widget>[
+            SizedBox(
+              width: 5,
+            ),
+            Icon(
+              Icons.edit,
+              color: mainOrange,
+            ),
+            Text(
+              " Edit",
+              style: TextStyle(
+                color: mainOrange,
+                fontWeight: FontWeight.w700,
+              ),
+              textAlign: TextAlign.left,
+            ),
+          ],
+        ),
+        alignment: Alignment.centerLeft,
+      ),
+    );
+  }
+  Widget slideLeftBackground() {
+    return Container(
+      child: Align(
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.end,
+          children: <Widget>[
+            Icon(
+              Icons.delete,
+              color: Colors.red,
+            ),
+            Text(
+              " Delete",
+              style: TextStyle(
+                color: Colors.red,
+                fontWeight: FontWeight.w700,
+              ),
+              textAlign: TextAlign.right,
+            ),
+            SizedBox(
+              width: 20,
+            ),
+          ],
+        ),
+        alignment: Alignment.centerRight,
+      ),
+    );
+  }
+
 }

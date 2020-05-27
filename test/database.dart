@@ -22,7 +22,7 @@ class DatabaseService {
       return NotesModel(
           note: doc.data['note'] ?? '',
           isCompleted: doc.data['isCompleted'] ?? false,
-          isContinued: doc.data['isContinued'] ?? false
+          isImportant: doc.data['isContinued'] ?? false
       );
     }).toList();
   }

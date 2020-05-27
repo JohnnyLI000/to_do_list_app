@@ -81,13 +81,16 @@ class _NewNotePageState extends State<NewNotePage> {
                   child: InkWell(
                     child: Row(
                       children: <Widget>[
-                        note.isContinued?Icon(Icons.star):Icon(Icons.star_border),
-                        Text("Do it everyday")
+                        note.isImportant?Icon(Icons.star):Icon(Icons.star_border),
+                        Padding(
+                          padding: const EdgeInsets.only(left:12),
+                          child: Text("It is very important !!!"),
+                        )
                       ],
                     ),
                     onTap: (){
                       setState(() {
-                        note.isContinued =!note.isContinued;
+                        note.isImportant =!note.isImportant;
                       });
                     },
                   ),

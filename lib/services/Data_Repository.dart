@@ -3,7 +3,7 @@ import 'package:to_do_list_app/Model/Model.dart';
 
 class DataRepository {
   //
-  final Query collection = Firestore.instance.collection('to_do_list').orderBy('isCompleted').orderBy('time',descending: true);
+  final Query collection = Firestore.instance.collection('to_do_list').orderBy('isCompleted').orderBy("isImportant",descending: true).orderBy('time',descending: true);
 
   // 2
   Stream<QuerySnapshot> getStream() {
